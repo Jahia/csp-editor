@@ -6,7 +6,7 @@
         <groupId>org.jahia.modules</groupId>
         <version>8.2.2.1</version>
     </parent>
-    <groupId>org.foo.modules</groupId>
+    <groupId>org.jahia.community</groupId>
     <artifactId>csp-editor</artifactId>
     <name>CSP editor</name>
     <version>1.0.1-SNAPSHOT</version>
