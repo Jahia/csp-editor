@@ -17,9 +17,12 @@
     <description>This is the custom module (CSP editor) for running on a Jahia server.</description>
 
     <scm>
-        <connection>scm:dummy:uri</connection>
-        <developerConnection>scm:dummy:uri</developerConnection>
+        <connection>scm:git:git@github.com:Jahia/csp-editor.git</connection>
+        <developerConnection>scm:git:git@github.com:Jahia/csp-editor.git</developerConnection>
+        <url>https://github.com/Jahia/csp-editor</url>
+        <tag>HEAD</tag>
     </scm>
+
     <properties>
         <jahia-depends>default,jcontent</jahia-depends>
         <jahia.plugin.version>6.13</jahia.plugin.version>
