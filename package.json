@@ -1,6 +1,6 @@
 {
   "name": "@jahia/csp-editor",
-  "version": "1.0.1-SNAPSHOT",
+  "version": "1.0.1",
   "scripts": {
     "build": "yarn webpack",
     "webpack": "webpack",
