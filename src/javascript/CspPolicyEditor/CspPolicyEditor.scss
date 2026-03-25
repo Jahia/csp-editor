@@ -1,0 +1,40 @@
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fullscreenContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120px;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  resize: vertical;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.fullscreenContainer .textarea {
+  resize: none;
+}

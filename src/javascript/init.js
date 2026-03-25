@@ -1,5 +1,5 @@
 import {registry} from '@jahia/ui-extender';
-import {CspPolicyEditor} from './CspPolicyEditor';
+import {CspPolicyEditor} from './CspPolicyEditor/CspPolicyEditor';
 
 window.jahia.i18n.loadNamespaces('csp-editor');
 
