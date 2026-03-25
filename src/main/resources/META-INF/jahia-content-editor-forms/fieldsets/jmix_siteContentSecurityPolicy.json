@@ -1,0 +1,9 @@
+{
+  "name": "jmix:siteContentSecurityPolicy",
+  "fields": [
+    {
+      "name": "policy",
+      "selectorType": "CspPolicyEditor"
+    }
+  ]
+}

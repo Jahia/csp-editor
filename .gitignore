@@ -1,0 +1,23 @@
+# Eclipse
+/.classpath
+/.project
+/.settings
+
+# Intellij
+.idea
+*.iml
+*.ipr
+
+# Maven
+target
+
+# Jahia DX Studio
+repository.xml.generated
+
+# Node / Yarn
+node
+node_modules
+.yarn
+
+# Webpack output (generated from src/javascript/)
+src/main/resources/javascript/apps/

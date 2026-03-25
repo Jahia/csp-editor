@@ -1,0 +1,7 @@
+{
+  "label": {
+    "cspPolicyEditor": {
+      "placeholder": "e.g. default-src 'self'; script-src 'nonce-{nonce}' 'strict-dynamic'"
+    }
+  }
+}
