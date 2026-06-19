@@ -106,7 +106,7 @@ csp-editor/
 
 ### selectorType registration
 
-`src/javascript/init.js` is the webpack entry point. It imports `CspPolicyEditor` from the component module, loads i18n namespaces, and registers the selectorType via the `@jahia/ui-extender` registry:
+`src/javascript/init.js` is the module's entry point: it is exposed as `./init` by the webpack Module Federation config and invoked automatically by Jahia's app-shell when the remote loads. It imports `CspPolicyEditor` from the component module, loads i18n namespaces, and registers the selectorType via the `@jahia/ui-extender` registry:
 
 ```js
 import {registry} from '@jahia/ui-extender';

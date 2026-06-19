@@ -103,13 +103,14 @@ const highlightCsp = text => {
  * @param {string} [props.value] current policy value
  * @param {(value: string) => void} [props.onChange] called with the new value
  */
-export const CspPolicyEditor = ({field, id, value, onChange}) => {
+export const CspPolicyEditor = ({field, id, onChange, value}) => {
     const {t} = useTranslation('csp-editor');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const textareaRef = useRef(null);
     const lineNumbersRef = useRef(null);
     const backdropRef = useRef(null);
     const fullscreenButtonRef = useRef(null);
+    const toolbarRef = useRef(null);
     const wasFullscreenRef = useRef(false);
 
     const isReadOnly = Boolean(field?.readOnly);
@@ -133,11 +134,18 @@ export const CspPolicyEditor = ({field, id, value, onChange}) => {
 
     // Move focus into the editor when entering fullscreen; restore it to the
     // toggle button when leaving (but not on the initial mount).
+    // WCAG 2.4.3: @jahia/moonstone Button may not forward its ref to the DOM node,
+    // so we fall back to the first focusable button inside the toolbar container.
     useEffect(() => {
         if (isFullscreen) {
             textareaRef.current?.focus();
         } else if (wasFullscreenRef.current) {
-            fullscreenButtonRef.current?.focus();
+            const btn = fullscreenButtonRef.current;
+            if (btn && typeof btn.focus === 'function') {
+                btn.focus();
+            } else {
+                toolbarRef.current?.querySelector('button')?.focus();
+            }
         }
 
         wasFullscreenRef.current = isFullscreen;
@@ -188,32 +196,44 @@ export const CspPolicyEditor = ({field, id, value, onChange}) => {
 
     const textareaId = `csp-policy-${id || 'field'}`;
     const hintId = `${textareaId}-fullscreen-hint`;
+    const headingId = `${textareaId}-fullscreen-heading`;
+
+    // Note: aria-modal alone does not prevent screen readers from leaving the
+    // dialog in all implementations. Applying `inert` to background siblings
+    // would be more robust but this component does not own the surrounding DOM.
+    // Consumers who require full isolation should apply `inert` at the page level.
 
     return (
         <div
+            aria-describedby={isFullscreen ? hintId : undefined}
+            aria-labelledby={isFullscreen ? headingId : undefined}
+            aria-modal={isFullscreen ? 'true' : undefined}
             className={isFullscreen ? styles.fullscreenContainer : styles.container}
             role={isFullscreen ? 'dialog' : undefined}
-            aria-modal={isFullscreen ? 'true' : undefined}
-            aria-label={isFullscreen ? t('label.cspPolicyEditor.fullscreenDialog', 'CSP editor — fullscreen') : undefined}
             onKeyDown={handleKeyDownTrap}
         >
-            <div className={styles.toolbar}>
+            <div ref={toolbarRef} className={styles.toolbar}>
+                {isFullscreen && (
+                    <h2 className={styles.fullscreenHeading} id={headingId}>
+                        {t('label.cspPolicyEditor.fullscreenDialog', 'CSP editor — fullscreen')}
+                    </h2>
+                )}
                 <Button
                     ref={fullscreenButtonRef}
-                    variant="ghost"
-                    size="small"
                     icon={isFullscreen ? <ExitFullscreenIcon/> : <FullscreenIcon/>}
                     label={isFullscreen ?
                         t('label.cspPolicyEditor.exitFullscreen', 'Exit fullscreen') :
                         t('label.cspPolicyEditor.fullscreen', 'Fullscreen')}
+                    size="small"
+                    variant="ghost"
                     onClick={() => setIsFullscreen(f => !f)}
                 />
             </div>
             <div className={styles.editorWrapper}>
                 <div
                     ref={lineNumbersRef}
-                    className={styles.lineNumbers}
                     aria-hidden="true"
+                    className={styles.lineNumbers}
                 >
                     {lineNumbers}
                 </div>
@@ -222,19 +242,19 @@ export const CspPolicyEditor = ({field, id, value, onChange}) => {
                         ref={backdropRef}
                         // eslint-disable-next-line react/no-danger -- highlightCsp escapes every dynamic token; only static <span> wrappers are literal HTML
                         dangerouslySetInnerHTML={{__html: highlightedHtml}}
-                        className={styles.backdrop}
                         aria-hidden="true"
+                        className={styles.backdrop}
                     />
                     <textarea
                         ref={textareaRef}
-                        id={textareaId}
-                        className={`${styles.textarea}${isReadOnly ? ` ${styles.readOnly}` : ''}`}
-                        value={value || ''}
-                        readOnly={isReadOnly}
-                        aria-label={t('label.cspPolicyEditor.ariaLabel', 'Content Security Policy')}
-                        aria-readonly={isReadOnly || undefined}
                         aria-describedby={isFullscreen ? hintId : undefined}
+                        aria-label={t('label.cspPolicyEditor.ariaLabel', 'Content Security Policy')}
+                        aria-readonly={isReadOnly ? 'true' : undefined}
+                        className={`${styles.textarea}${isReadOnly ? ` ${styles.readOnly}` : ''}`}
+                        id={textareaId}
                         placeholder={t('label.cspPolicyEditor.placeholder', 'e.g. default-src \'self\'; script-src \'nonce-{nonce}\' \'strict-dynamic\'')}
+                        readOnly={isReadOnly}
+                        value={value || ''}
                         onChange={e => onChange && onChange(e.target.value)}
                         onScroll={handleScroll}
                     />
@@ -254,8 +274,8 @@ CspPolicyEditor.propTypes = {
         readOnly: PropTypes.bool
     }),
     id: PropTypes.string,
-    value: PropTypes.string,
-    onChange: PropTypes.func
+    onChange: PropTypes.func,
+    value: PropTypes.string
 };
 
 // Exported for unit testing of the pure highlighter logic.

@@ -18,7 +18,7 @@ module.exports = {
         '\\.(scss|css)$': 'identity-obj-proxy'
     },
     setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-    collectCoverageFrom: ['src/javascript/CspPolicyEditor/CspPolicyEditor.jsx'],
+    collectCoverageFrom: ['<rootDir>/src/javascript/CspPolicyEditor/CspPolicyEditor.jsx'],
     coverageThreshold: {
         global: {
             statements: 80,

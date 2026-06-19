@@ -43,8 +43,19 @@ $color-focus-ring: #003d99;
 
 .toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 4px;
+}
+
+// Compact heading shown only in fullscreen mode. Provides a visible label for the
+// dialog (WCAG 2.4.6 / 1.3.1) and is referenced by aria-labelledby on the container.
+.fullscreenHeading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $color-editor-text;
+  letter-spacing: 0.01em;
 }
 
 .editorWrapper {
@@ -54,8 +65,9 @@ $color-focus-ring: #003d99;
 
   // visible-lines × (font-size × line-height) + top/bottom padding.
   // min-height (not height) so the editor can grow when the user enlarges text.
+  // Setting both min-height and height to the same value would prevent growth, so
+  // only min-height is used here; height is intentionally omitted.
   min-height: calc(#{$editor-visible-lines} * #{$editor-font-size} * #{$editor-line-height} + 2 * #{$editor-padding});
-  height: calc(#{$editor-visible-lines} * #{$editor-font-size} * #{$editor-line-height} + 2 * #{$editor-padding});
   overflow: hidden;
 
   // Visible keyboard focus indicator (replaces the textarea's removed outline).
@@ -155,6 +167,13 @@ $color-focus-ring: #003d99;
   caret-color: $color-caret;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+
+  // Placeholder text is normally invisible because color: transparent inherits
+  // to ::placeholder. Override with a colour that meets WCAG AAA (≥7:1 on white).
+  // #595959 yields ~7.4:1 contrast on #fff.
+  &::placeholder {
+    color: #595959;
+  }
 }
 
 .textarea.readOnly {

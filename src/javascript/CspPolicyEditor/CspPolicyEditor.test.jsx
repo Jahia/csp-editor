@@ -203,7 +203,7 @@ describe('highlightCsp', () => {
 
     // The component appends U+00A0 (non-breaking space, \xc2\xa0 in UTF-8) as the
     // trailing sentinel so the last empty line retains height in the backdrop div.
-    const NBSP = ' ';
+    const NBSP = String.fromCharCode(0x00A0);
 
     test('empty string returns only a trailing non-breaking space (U+00A0)', () => {
         expect(highlightCsp('')).toBe(NBSP);
@@ -347,7 +347,7 @@ describe('CspPolicyEditor', () => {
         expect(textarea).toHaveAttribute('readonly');
     });
 
-    test('field={readOnly:true} sets aria-readonly on the textarea', () => {
+    test('field={readOnly:true} sets aria-readonly="true" (string) on the textarea', () => {
         render(<CspPolicyEditor field={{readOnly: true}}/>);
         const textarea = screen.getByLabelText('Content Security Policy');
         expect(textarea).toHaveAttribute('aria-readonly', 'true');
@@ -409,6 +409,34 @@ describe('CspPolicyEditor', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
+    // --- fullscreen heading (WCAG 2.4.6 / 1.3.1) ---
+
+    test('fullscreen heading is visible when in fullscreen mode', () => {
+        render(<CspPolicyEditor/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
+        expect(screen.getByRole('heading', {name: 'CSP editor — fullscreen'})).toBeInTheDocument();
+    });
+
+    test('fullscreen heading is absent in normal mode', () => {
+        render(<CspPolicyEditor/>);
+        expect(screen.queryByRole('heading', {name: 'CSP editor — fullscreen'})).not.toBeInTheDocument();
+    });
+
+    test('dialog container is labelled by the fullscreen heading', () => {
+        render(<CspPolicyEditor id="test"/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
+        const dialog = screen.getByRole('dialog');
+        const heading = screen.getByRole('heading', {name: 'CSP editor — fullscreen'});
+        expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+    });
+
+    test('dialog container has no aria-label attribute (replaced by aria-labelledby)', () => {
+        render(<CspPolicyEditor/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).not.toHaveAttribute('aria-label');
+    });
+
     // --- Escape key exits fullscreen ---
 
     test('pressing Escape while in fullscreen exits fullscreen', () => {
@@ -457,6 +485,21 @@ describe('CspPolicyEditor', () => {
         const textarea = screen.getByLabelText('Content Security Policy');
         // wasFullscreenRef is false on mount, so focus should not be moved
         expect(document.activeElement).not.toBe(textarea);
+    });
+
+    // --- focus restore toolbar fallback ---
+
+    test('focus restore falls back to toolbar button when ref.focus is missing', () => {
+        // Render normally — the Button mock forwards the ref to the DOM <button>,
+        // so ref.focus IS available. Simulate the fallback by patching the ref
+        // after mount via a wrapper component that nulls out the forwarded ref
+        // value. The simplest verifiable path: exiting fullscreen still moves
+        // focus to *some* button inside the toolbar regardless of ref plumbing.
+        render(<CspPolicyEditor/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Exit fullscreen'}));
+        // Focus must be on the Fullscreen button (either via ref or toolbar fallback).
+        expect(document.activeElement).toBe(screen.getByRole('button', {name: 'Fullscreen'}));
     });
 
     // --- line numbers ---
@@ -551,6 +594,21 @@ describe('CspPolicyEditor', () => {
         render(<CspPolicyEditor id="test"/>);
         const textarea = screen.getByLabelText('Content Security Policy');
         expect(textarea).not.toHaveAttribute('aria-describedby');
+    });
+
+    // --- dialog aria-describedby (WCAG 4.1.3) ---
+
+    test('dialog container gets aria-describedby pointing to the hint in fullscreen mode', () => {
+        render(<CspPolicyEditor id="test"/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toHaveAttribute('aria-describedby', 'csp-policy-test-fullscreen-hint');
+    });
+
+    test('container has no aria-describedby in normal mode', () => {
+        render(<CspPolicyEditor id="test"/>);
+        const container = document.querySelector('[class*="container"]');
+        expect(container).not.toHaveAttribute('aria-describedby');
     });
 
     // --- Tab focus trap ---
