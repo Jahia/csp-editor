@@ -22,5 +22,11 @@ node_modules
 # Webpack output (generated from src/javascript/)
 src/main/resources/javascript/apps/
 
+# Jest coverage output
+coverage
+
+# CodeGraph local index
+.codegraph
+
 release.properties
 pom.xml.releaseBackup

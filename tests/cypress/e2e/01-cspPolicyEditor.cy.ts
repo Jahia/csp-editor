@@ -116,16 +116,30 @@ describe('CSP Policy Editor', () => {
          * NOTE: this drives the live jContent UI. If the route or toolbar changes across Jahia
          * versions, this helper is the single place to adjust.
          */
+        // The Content Editor shows a full-panel loading mask (position:absolute, z-index 9999,
+        // background var(--color-light40)) while it saves/loads. That mask can intercept clicks
+        // on collapsibles and toggles, so wait for it to clear before each navigation step.
+        const waitForCeOverlayGone = () => {
+            cy.get('body').then(($body) => {
+                if ($body.find('[style*="color-light40"]').length > 0) {
+                    cy.get('[style*="color-light40"]', { timeout: 30000 }).should('not.exist')
+                }
+            })
+        }
+
         const openContentEditor = (path: string) => {
             const relativePath = path.replace(`/sites/${siteKey}`, '')
             cy.visit(`/jahia/jcontent/${siteKey}/en/pages${relativePath}`)
             cy.contains('button', 'Edit', { timeout: 60000 }).should('be.visible').click()
             // The CSP `policy` field lives in the `options` section, shown as a collapsible in the
             // Edit tab once the editor is expanded via Advanced mode. Expand it to reveal the field.
+            waitForCeOverlayGone()
             cy.contains(/advanced mode/i, { timeout: 30000 }).click()
+            waitForCeOverlayGone()
             cy.contains('button.moonstone-collapsible_button', 'Options', { timeout: 30000 }).scrollIntoView().click()
             // jmix:pageContentSecurityPolicy is an activatable fieldset: the CspPolicyEditor only
             // renders once the page-level CSP toggle is checked.
+            waitForCeOverlayGone()
             cy.contains(/Replace Content-Security-Policy at the page level/i, { timeout: 30000 })
                 .scrollIntoView()
                 .click()

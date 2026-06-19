@@ -1,7 +1,12 @@
 {
   "label": {
     "cspPolicyEditor": {
-      "placeholder": "e.g. default-src 'self'; script-src 'nonce-{nonce}' 'strict-dynamic'"
+      "ariaLabel": "Content Security Policy",
+      "placeholder": "e.g. default-src 'self'; script-src 'nonce-{nonce}' 'strict-dynamic'",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "fullscreenDialog": "CSP editor — fullscreen",
+      "fullscreenHint": "Press Escape to exit fullscreen mode."
     }
   }
 }

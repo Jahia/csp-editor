@@ -25,6 +25,14 @@
         <jahia.plugin.version>6.13</jahia.plugin.version>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <yarn.arguments>build:production</yarn.arguments>
+        <!-- Include the hand-written React source in SonarQube analysis (the webpack
+             output and generated BOM under apps/ are excluded as build artifacts).
+             *.test.jsx files are classified as test sources so their repetitive
+             assertion blocks are not counted as production duplication. -->
+        <sonar.sources>pom.xml,src/javascript</sonar.sources>
+        <sonar.tests>src/javascript</sonar.tests>
+        <sonar.test.inclusions>**/*.test.jsx,**/*.test.js</sonar.test.inclusions>
+        <sonar.exclusions>src/main/resources/javascript/apps/**</sonar.exclusions>
     </properties>
     <repositories>
         <repository>

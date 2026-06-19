@@ -3,11 +3,9 @@ import {CspPolicyEditor} from './CspPolicyEditor/CspPolicyEditor';
 
 window.jahia.i18n.loadNamespaces('csp-editor');
 
-export default function () {
+export default function registerCspPolicyEditor() {
     registry.add('selectorType', 'CspPolicyEditor', {
         cmp: CspPolicyEditor,
         supportMultiple: false
     });
 }
-
-console.debug('%c csp-editor CspPolicyEditor selectorType registered', 'color: #3c8cba');
