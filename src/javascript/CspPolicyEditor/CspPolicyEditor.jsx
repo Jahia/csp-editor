@@ -23,9 +23,43 @@ const ExitFullscreenIcon = () => (
 // Allow-list of CSP directive names used only for colouring. A token that does not
 // match is rendered as plain text — a useful "possible typo" signal to the author.
 // Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-const CSP_DIRECTIVE_RE = /^(default-src|script-src(?:-elem|-attr)?|style-src(?:-elem|-attr)?|img-src|font-src|connect-src|frame-src|object-src|media-src|child-src|worker-src|manifest-src|prefetch-src|navigate-to|form-action|frame-ancestors|base-uri|sandbox|report-uri|report-to|upgrade-insecure-requests|block-all-mixed-content|require-trusted-types-for|trusted-types|plugin-types)$/i;
+const CSP_DIRECTIVES = new Set([
+    'default-src',
+    'script-src',
+    'script-src-elem',
+    'script-src-attr',
+    'style-src',
+    'style-src-elem',
+    'style-src-attr',
+    'img-src',
+    'font-src',
+    'connect-src',
+    'frame-src',
+    'object-src',
+    'media-src',
+    'child-src',
+    'worker-src',
+    'manifest-src',
+    'prefetch-src',
+    'navigate-to',
+    'form-action',
+    'frame-ancestors',
+    'base-uri',
+    'sandbox',
+    'report-uri',
+    'report-to',
+    'upgrade-insecure-requests',
+    'block-all-mixed-content',
+    'require-trusted-types-for',
+    'trusted-types',
+    'plugin-types'
+]);
+const isCspDirective = word => CSP_DIRECTIVES.has(word.toLowerCase());
 const SCHEME_ONLY_RE = /^(https?:|data:|blob:|filesystem:)$/;
 const URL_RE = /^https?:\/\//;
+
+// HTML entities for the characters that must never reach innerHTML unescaped.
+const HTML_ESCAPES = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;'};
 
 /**
  * HTML-escapes a string. The highlighter output is injected via
@@ -36,13 +70,7 @@ const URL_RE = /^https?:\/\//;
  * @param {string} str raw, untrusted text
  * @returns {string} text safe to embed in HTML
  */
-const escapeHtml = str =>
-    str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+const escapeHtml = str => str.replace(/[&<>"']/g, ch => HTML_ESCAPES[ch]);
 
 /**
  * Tokenises a CSP policy string and returns an HTML string with each token
@@ -73,7 +101,7 @@ const highlightCsp = text => {
             result += `<span class="csp-keyword">${escapeHtml(quoted)}</span>`;
         } else if (word) {
             const escaped = escapeHtml(word);
-            if (CSP_DIRECTIVE_RE.test(word)) {
+            if (isCspDirective(word)) {
                 result += `<span class="csp-directive">${escaped}</span>`;
             } else if (SCHEME_ONLY_RE.test(word)) {
                 result += `<span class="csp-scheme">${escaped}</span>`;
@@ -116,7 +144,10 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
     const isReadOnly = Boolean(field?.readOnly);
     const exitFullscreen = useCallback(() => setIsFullscreen(false), []);
 
-    // Escape exits fullscreen.
+    // While fullscreen: Escape exits, and Tab is trapped inside the overlay so
+    // focus cannot escape into the visually-occluded Content Editor form behind it.
+    // A document-level listener (rather than an onKeyDown prop on the dialog div)
+    // keeps the container free of interactive handlers.
     useEffect(() => {
         if (!isFullscreen) {
             return undefined;
@@ -125,6 +156,28 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
         const handleKeyDown = e => {
             if (e.key === 'Escape') {
                 exitFullscreen();
+                return;
+            }
+
+            if (e.key !== 'Tab') {
+                return;
+            }
+
+            const focusables = [fullscreenButtonRef.current, textareaRef.current].filter(Boolean);
+            if (focusables.length === 0) {
+                return;
+            }
+
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+
+            if (e.shiftKey && active === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && active === last) {
+                e.preventDefault();
+                first.focus();
             }
         };
 
@@ -163,31 +216,6 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
         }
     }, []);
 
-    // Trap Tab focus inside the fullscreen overlay so it cannot escape into the
-    // visually-occluded Content Editor form behind it.
-    const handleKeyDownTrap = useCallback(e => {
-        if (!isFullscreen || e.key !== 'Tab') {
-            return;
-        }
-
-        const focusables = [fullscreenButtonRef.current, textareaRef.current].filter(Boolean);
-        if (focusables.length === 0) {
-            return;
-        }
-
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        const active = document.activeElement;
-
-        if (e.shiftKey && active === first) {
-            e.preventDefault();
-            last.focus();
-        } else if (!e.shiftKey && active === last) {
-            e.preventDefault();
-            first.focus();
-        }
-    }, [isFullscreen]);
-
     const lineNumbers = useMemo(
         () => (value || '').split('\n').map((_, i) => i + 1).join('\n'),
         [value]
@@ -197,6 +225,7 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
     const textareaId = `csp-policy-${id || 'field'}`;
     const hintId = `${textareaId}-fullscreen-hint`;
     const headingId = `${textareaId}-fullscreen-heading`;
+    const textareaClassName = isReadOnly ? `${styles.textarea} ${styles.readOnly}` : styles.textarea;
 
     // Note: aria-modal alone does not prevent screen readers from leaving the
     // dialog in all implementations. Applying `inert` to background siblings
@@ -210,7 +239,6 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
             aria-modal={isFullscreen ? 'true' : undefined}
             className={isFullscreen ? styles.fullscreenContainer : styles.container}
             role={isFullscreen ? 'dialog' : undefined}
-            onKeyDown={handleKeyDownTrap}
         >
             <div ref={toolbarRef} className={styles.toolbar}>
                 {isFullscreen && (
@@ -250,7 +278,7 @@ export const CspPolicyEditor = ({field, id, onChange, value}) => {
                         aria-describedby={isFullscreen ? hintId : undefined}
                         aria-label={t('label.cspPolicyEditor.ariaLabel', 'Content Security Policy')}
                         aria-readonly={isReadOnly ? 'true' : undefined}
-                        className={`${styles.textarea}${isReadOnly ? ` ${styles.readOnly}` : ''}`}
+                        className={textareaClassName}
                         id={textareaId}
                         placeholder={t('label.cspPolicyEditor.placeholder', 'e.g. default-src \'self\'; script-src \'nonce-{nonce}\' \'strict-dynamic\'')}
                         readOnly={isReadOnly}

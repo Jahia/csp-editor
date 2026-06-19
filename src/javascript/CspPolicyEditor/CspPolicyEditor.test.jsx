@@ -203,7 +203,7 @@ describe('highlightCsp', () => {
 
     // The component appends U+00A0 (non-breaking space, \xc2\xa0 in UTF-8) as the
     // trailing sentinel so the last empty line retains height in the backdrop div.
-    const NBSP = String.fromCharCode(0x00A0);
+    const NBSP = String.fromCodePoint(0x00A0);
 
     test('empty string returns only a trailing non-breaking space (U+00A0)', () => {
         expect(highlightCsp('')).toBe(NBSP);
