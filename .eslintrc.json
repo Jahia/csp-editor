@@ -1,0 +1,19 @@
+{
+  "root": true,
+  "extends": "@jahia",
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "ignorePatterns": [
+    "src/main/resources/javascript/apps/**",
+    "node/**",
+    "node_modules/**",
+    "tests/**"
+  ],
+  "rules": {
+    "capitalized-comments": "off",
+    "padding-line-between-statements": "off"
+  }
+}

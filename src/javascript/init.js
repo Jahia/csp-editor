@@ -9,5 +9,3 @@ export default function () {
         supportMultiple: false
     });
 }
-
-console.debug('%c csp-editor CspPolicyEditor selectorType registered', 'color: #3c8cba');

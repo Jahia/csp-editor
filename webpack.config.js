@@ -43,6 +43,10 @@ module.exports = (env, argv) => {
                     use: {
                         loader: 'babel-loader',
                         options: {
+                            // Use only these inline presets; ignore the root babel.config.js
+                            // (that file exists for ESLint/Jest and targets Node, not the browser bundle).
+                            configFile: false,
+                            babelrc: false,
                             presets: [
                                 ['@babel/preset-env', {
                                     modules: false,
@@ -98,7 +102,7 @@ module.exports = (env, argv) => {
             new CopyWebpackPlugin({patterns: [{from: './package.json', to: ''}]}),
             new CycloneDxWebpackPlugin(cycloneDxWebpackPluginOptions)
         ],
-        mode: 'development'
+        mode: argv.mode || 'production'
     };
 
     config.devtool = (argv.mode === 'production') ? 'source-map' : 'eval-source-map';
