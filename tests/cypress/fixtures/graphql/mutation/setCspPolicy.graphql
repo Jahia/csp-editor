@@ -1,0 +1,10 @@
+mutation SetCspPolicy($pathOrId: String!, $mixin: String!, $policy: String!) {
+    jcr(workspace: EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            addMixins(mixins: [$mixin])
+            mutateProperty(name: "policy") {
+                setValue(value: $policy)
+            }
+        }
+    }
+}
