@@ -1,0 +1,19 @@
+query GetEditForm($uuidOrPath: String!, $locale: String!, $uiLocale: String!) {
+    forms {
+        editForm(uuidOrPath: $uuidOrPath, locale: $locale, uiLocale: $uiLocale) {
+            name
+            sections {
+                name
+                fieldSets {
+                    name
+                    dynamic
+                    activated
+                    fields {
+                        name
+                        selectorType
+                    }
+                }
+            }
+        }
+    }
+}

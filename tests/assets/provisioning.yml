@@ -1,0 +1,45 @@
+- karafCommand: "log:log 'START - provisioning'"
+
+- karafCommand: "log:log 'START - Install Digitall bundles'"
+- installBundle:
+      - 'mvn:org.jahia.modules/bookmarks/3.1.0'
+      - 'mvn:org.jahia.modules/bootstrap3-components/4.3.0'
+      - 'mvn:org.jahia.modules/bootstrap3-core/4.3.0'
+      - 'mvn:org.jahia.modules/calendar/3.2.0'
+      - 'mvn:org.jahia.modules/default-skins/8.2.0'
+      - 'mvn:org.jahia.modules/digitall/3.0.0'
+      - 'mvn:org.jahia.modules/dx-base-demo-components/3.0.0'
+      - 'mvn:org.jahia.modules/dx-base-demo-core/2.6.0'
+      - 'mvn:org.jahia.modules/dx-base-demo-templates/4.0.0'
+      - 'mvn:org.jahia.modules/event/4.0.1'
+      - 'mvn:org.jahia.modules/font-awesome/6.1.5'
+      - 'mvn:org.jahia.modules/grid/8.1.0'
+      - 'mvn:org.jahia.modules/legacy-default-components/1.0.0'
+      - 'mvn:org.jahia.modules/location/3.2.0'
+      - 'mvn:org.jahia.modules/news/3.4.0'
+      - 'mvn:org.jahia.modules/person/3.2.0'
+      - 'mvn:org.jahia.modules/press/3.1.0'
+      - 'mvn:org.jahia.modules/rating/3.3.0'
+      - 'mvn:org.jahia.modules/skins/8.2.0'
+      - 'mvn:org.jahia.modules/topstories/3.0.0'
+  autoStart: true
+  uninstallPreviousVersion: true
+- karafCommand: "log:log 'END - Install Digitall bundles'"
+
+# The CSP editor overrides the `policy` field on the jmix:siteContentSecurityPolicy and
+# jmix:pageContentSecurityPolicy mixins. Those node types are supplied by the
+# content-security-policy companion module, which must be deployed so the test can enable
+# it on the site it creates. csp-editor itself is deployed by the @jahia/cypress tooling
+# via MODULE_ID, so it is intentionally not listed here.
+- karafCommand: "log:log 'START - Install content-security-policy module'"
+- installBundle:
+      - 'mvn:org.jahia.modules/content-security-policy/2.5.0'
+  autoStart: true
+  uninstallPreviousVersion: true
+- karafCommand: "log:log 'END - Install content-security-policy module'"
+
+# No site is imported here: the test creates its own site (createSite) and enables the
+# content-security-policy module on it. The Digitall bundles above are installed only to
+# provide the dx-base-demo-templates template set used when creating that site.
+- karafCommand: "log:log 'END - provisioning'"
+
