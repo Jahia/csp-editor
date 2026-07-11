@@ -136,6 +136,20 @@ describe('highlightCsp', () => {
         expect(highlightCsp('\'strict-dynamic\'')).toContain('<span class="csp-keyword">&#39;strict-dynamic&#39;</span>');
     });
 
+    // D2 Parts 2 & 3 — csp-keyword has no allow-list, unlike csp-directive: any
+    // single-quoted substring is styled as a keyword, real CSP keyword or not.
+    // This characterizes today's behavior as a deliberate tripwire (documented
+    // divergence D2), not a bug to fix in this stage.
+    test('D2: wraps an arbitrary made-up quoted string in csp-keyword span (no allow-list)', () => {
+        const result = highlightCsp('\'totally-made-up-keyword\'');
+        expect(result).toContain('<span class="csp-keyword">&#39;totally-made-up-keyword&#39;</span>');
+    });
+
+    test('D2: wraps a typo of \'self\' ("slef") in csp-keyword span identically to a real keyword', () => {
+        const result = highlightCsp('\'slef\'');
+        expect(result).toContain('<span class="csp-keyword">&#39;slef&#39;</span>');
+    });
+
     // --- schemes ---
 
     test('wraps https: in csp-scheme span (scheme-only, not url)', () => {
@@ -186,6 +200,27 @@ describe('highlightCsp', () => {
         expect(highlightCsp('*')).toContain('<span class="csp-wildcard">*</span>');
     });
 
+    // U4 — wildcard highlighting only matches a bare `*`, not the common
+    // `*.example.com` subdomain-wildcard idiom. Positive control (bare `*`) is
+    // above; this pairs it with the negative case to make the gap explicit.
+    test('U4: bare * produces a csp-wildcard span (positive control)', () => {
+        const result = highlightCsp('img-src *');
+        expect(result).toContain('<span class="csp-wildcard">*</span>');
+    });
+
+    test('U4: *.example.com produces no span at all — subdomain wildcard is unmatched', () => {
+        const result = highlightCsp('img-src *.example.com');
+        // img-src is a real directive and legitimately gets its own span; the
+        // point under test is that *.example.com itself is never wrapped.
+        expect(result).toContain('<span class="csp-directive">img-src</span>');
+        expect(result).not.toContain('<span class="csp-wildcard">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-keyword">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-scheme">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-url">*.example.com</span>');
+        // still rendered as plain (escaped) text, not dropped
+        expect(result).toContain('*.example.com');
+    });
+
     // --- separator ---
 
     test('wraps ; in csp-sep span', () => {
@@ -219,6 +254,21 @@ describe('highlightCsp', () => {
     test('always appends a trailing non-breaking space (U+00A0)', () => {
         const result = highlightCsp('default-src \'self\'');
         expect(result.endsWith(NBSP)).toBe(true);
+    });
+
+    // U6 — an unterminated/orphan single-quote is silently dropped by the
+    // tokenizer (no regex alternative can consume a lone unmatched quote): the
+    // stray `'` must not appear anywhere in the output, raw or escaped, while
+    // the rest of the input is still rendered as plain escaped text.
+    test('U6: unterminated single-quote is silently dropped, not escaped or rendered', () => {
+        const result = highlightCsp('default-src \'self');
+        expect(result).not.toContain('<span class="csp-keyword">');
+        // the stray quote must not survive, neither raw nor entity-escaped
+        expect(result).not.toContain('\'');
+        expect(result).not.toContain('&#39;');
+        // but the word itself is still present as plain text
+        expect(result).toContain('self');
+        expect(result).toContain('<span class="csp-directive">default-src</span>');
     });
 
     // --- XSS safety ---
