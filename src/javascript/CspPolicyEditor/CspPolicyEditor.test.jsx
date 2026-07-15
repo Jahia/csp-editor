@@ -136,6 +136,20 @@ describe('highlightCsp', () => {
         expect(highlightCsp('\'strict-dynamic\'')).toContain('<span class="csp-keyword">&#39;strict-dynamic&#39;</span>');
     });
 
+    // D2 Parts 2 & 3 — csp-keyword has no allow-list, unlike csp-directive: any
+    // single-quoted substring is styled as a keyword, real CSP keyword or not.
+    // This characterizes today's behavior as a deliberate tripwire (documented
+    // divergence D2), not a bug to fix in this stage.
+    test('D2: wraps an arbitrary made-up quoted string in csp-keyword span (no allow-list)', () => {
+        const result = highlightCsp('\'totally-made-up-keyword\'');
+        expect(result).toContain('<span class="csp-keyword">&#39;totally-made-up-keyword&#39;</span>');
+    });
+
+    test('D2: wraps a typo of \'self\' ("slef") in csp-keyword span identically to a real keyword', () => {
+        const result = highlightCsp('\'slef\'');
+        expect(result).toContain('<span class="csp-keyword">&#39;slef&#39;</span>');
+    });
+
     // --- schemes ---
 
     test('wraps https: in csp-scheme span (scheme-only, not url)', () => {
@@ -186,6 +200,27 @@ describe('highlightCsp', () => {
         expect(highlightCsp('*')).toContain('<span class="csp-wildcard">*</span>');
     });
 
+    // U4 — wildcard highlighting only matches a bare `*`, not the common
+    // `*.example.com` subdomain-wildcard idiom. Positive control (bare `*`) is
+    // above; this pairs it with the negative case to make the gap explicit.
+    test('U4: bare * produces a csp-wildcard span (positive control)', () => {
+        const result = highlightCsp('img-src *');
+        expect(result).toContain('<span class="csp-wildcard">*</span>');
+    });
+
+    test('U4: *.example.com produces no span at all — subdomain wildcard is unmatched', () => {
+        const result = highlightCsp('img-src *.example.com');
+        // img-src is a real directive and legitimately gets its own span; the
+        // point under test is that *.example.com itself is never wrapped.
+        expect(result).toContain('<span class="csp-directive">img-src</span>');
+        expect(result).not.toContain('<span class="csp-wildcard">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-keyword">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-scheme">*.example.com</span>');
+        expect(result).not.toContain('<span class="csp-url">*.example.com</span>');
+        // still rendered as plain (escaped) text, not dropped
+        expect(result).toContain('*.example.com');
+    });
+
     // --- separator ---
 
     test('wraps ; in csp-sep span', () => {
@@ -219,6 +254,21 @@ describe('highlightCsp', () => {
     test('always appends a trailing non-breaking space (U+00A0)', () => {
         const result = highlightCsp('default-src \'self\'');
         expect(result.endsWith(NBSP)).toBe(true);
+    });
+
+    // U6 — an unterminated/orphan single-quote is silently dropped by the
+    // tokenizer (no regex alternative can consume a lone unmatched quote): the
+    // stray `'` must not appear anywhere in the output, raw or escaped, while
+    // the rest of the input is still rendered as plain escaped text.
+    test('U6: unterminated single-quote is silently dropped, not escaped or rendered', () => {
+        const result = highlightCsp('default-src \'self');
+        expect(result).not.toContain('<span class="csp-keyword">');
+        // the stray quote must not survive, neither raw nor entity-escaped
+        expect(result).not.toContain('\'');
+        expect(result).not.toContain('&#39;');
+        // but the word itself is still present as plain text
+        expect(result).toContain('self');
+        expect(result).toContain('<span class="csp-directive">default-src</span>');
     });
 
     // --- XSS safety ---
@@ -366,6 +416,21 @@ describe('CspPolicyEditor', () => {
         expect(textarea).not.toHaveAttribute('aria-readonly');
     });
 
+    // U1 — third documented readOnly mechanism: the .readOnly CSS class swap
+    // (checkable via identity-obj-proxy, which returns the property-name string
+    // even though no real CSS value reaches jsdom).
+    test('U1: field={readOnly:true} adds the readOnly-mapped class to the textarea', () => {
+        render(<CspPolicyEditor field={{readOnly: true}}/>);
+        const textarea = screen.getByLabelText('Content Security Policy');
+        expect(textarea.className).toContain('readOnly');
+    });
+
+    test('U1: field={readOnly:false} does NOT add the readOnly-mapped class', () => {
+        render(<CspPolicyEditor field={{readOnly: false}}/>);
+        const textarea = screen.getByLabelText('Content Security Policy');
+        expect(textarea.className).not.toContain('readOnly');
+    });
+
     // --- fullscreen toggle ---
 
     test('clicking Fullscreen button changes label to "Exit fullscreen"', () => {
@@ -489,17 +554,69 @@ describe('CspPolicyEditor', () => {
 
     // --- focus restore toolbar fallback ---
 
-    test('focus restore falls back to toolbar button when ref.focus is missing', () => {
-        // Render normally — the Button mock forwards the ref to the DOM <button>,
-        // so ref.focus IS available. Simulate the fallback by patching the ref
-        // after mount via a wrapper component that nulls out the forwarded ref
-        // value. The simplest verifiable path: exiting fullscreen still moves
-        // focus to *some* button inside the toolbar regardless of ref plumbing.
+    // NOTE: this test's original title claimed to cover the toolbar-fallback
+    // branch, but it never actually breaks `fullscreenButtonRef.current.focus`,
+    // so — as flagged by Stage 4 of the SUPPORT-646 gap analysis — it only ever
+    // re-exercises the primary ref path. Renamed to describe what it actually
+    // asserts; the genuine fallback-branch test follows immediately below.
+    test('exiting fullscreen restores focus via the ref path when ref.focus is a function (primary path only)', () => {
         render(<CspPolicyEditor/>);
         fireEvent.click(screen.getByRole('button', {name: 'Fullscreen'}));
         fireEvent.click(screen.getByRole('button', {name: 'Exit fullscreen'}));
-        // Focus must be on the Fullscreen button (either via ref or toolbar fallback).
+        // Focus must be on the Fullscreen button (via the ref path in this case).
         expect(document.activeElement).toBe(screen.getByRole('button', {name: 'Fullscreen'}));
+    });
+
+    // U2 — genuine coverage of the toolbar-fallback branch (CspPolicyEditor.jsx
+    // ~197-201): `if (btn && typeof btn.focus === 'function') { btn.focus(); }
+    // else { toolbarRef.current?.querySelector('button')?.focus(); }`.
+    //
+    // Since the toolbar contains only one <button> (the same DOM node backing
+    // fullscreenButtonRef via the mocked forwardRef), simply deleting `.focus`
+    // outright would make the fallback's own `?.focus()` call throw too (it
+    // would find the very same broken node). Instead we install a getter that
+    // returns `undefined` on its FIRST read (making the primary `typeof
+    // btn.focus === 'function'` check fail, forcing the `else` branch) and a
+    // spy-wrapped real `focus` implementation on every subsequent read (so the
+    // fallback's `.querySelector('button')?.focus()` call — a second, distinct
+    // property read — succeeds and is independently observable). This proves
+    // specifically that the toolbar-fallback code path ran, not just that
+    // *some* focus() call landed on the button.
+    test('U2: falls back to toolbarRef.querySelector("button").focus() when ref.focus is missing', () => {
+        render(<CspPolicyEditor/>);
+        const button = screen.getByRole('button', {name: 'Fullscreen'});
+
+        // Enter fullscreen normally (unaffected by the patch installed below).
+        fireEvent.click(button);
+        expect(screen.getByRole('button', {name: 'Exit fullscreen'})).toBeInTheDocument();
+
+        const realFocus = HTMLElement.prototype.focus;
+        const fallbackFocusSpy = jest.fn(function (...args) {
+            return realFocus.apply(this, args);
+        });
+        let readCount = 0;
+        Object.defineProperty(button, 'focus', {
+            configurable: true,
+            get() {
+                readCount += 1;
+                // 1st read = the primary-path `typeof btn.focus === 'function'`
+                // check: return undefined so that check is false.
+                // 2nd+ read = the fallback's querySelector(...).focus access:
+                // return a real, callable, spy-wrapped focus implementation.
+                return readCount === 1 ? undefined : fallbackFocusSpy;
+            }
+        });
+
+        try {
+            fireEvent.click(screen.getByRole('button', {name: 'Exit fullscreen'}));
+
+            // The toolbar-fallback branch specifically ran (not the ref branch,
+            // which would never have read `.focus` a second time nor called it).
+            expect(fallbackFocusSpy).toHaveBeenCalledTimes(1);
+            expect(document.activeElement).toBe(button);
+        } finally {
+            delete button.focus;
+        }
     });
 
     // --- line numbers ---
@@ -663,6 +780,36 @@ describe('CspPolicyEditor', () => {
         render(<CspPolicyEditor value="a\nb\nc"/>);
         const textarea = screen.getByLabelText('Content Security Policy');
         expect(() => fireEvent.scroll(textarea)).not.toThrow();
+    });
+
+    // F6 (scroll-sync half) — the gutter and backdrop must stay pixel-synced to
+    // the textarea's actual scroll position, not just "not throw" on a scroll
+    // event. jsdom has no layout engine, so scrollTop/scrollLeft never arise
+    // from real overflow — they must be forced directly onto the textarea
+    // before firing the scroll event, exactly as CspPolicyEditor.jsx's
+    // handleScroll (lines 207-217) reads them from the event target.
+    test('F6: scrolling the textarea syncs scrollTop/scrollLeft onto the line-numbers gutter and backdrop', () => {
+        const multilineValue = Array.from({length: 20}, (_, i) => `default-src 'self' ${i}`).join('\n');
+        render(<CspPolicyEditor value={multilineValue}/>);
+        const textarea = screen.getByLabelText('Content Security Policy');
+        const ariaHiddenDivs = document.querySelectorAll('[aria-hidden="true"]');
+        const lineNumbersDiv = ariaHiddenDivs[0];
+        const backdropDiv = ariaHiddenDivs[1];
+
+        // Sanity check: before scrolling, everything starts at 0.
+        expect(lineNumbersDiv.scrollTop).toBe(0);
+        expect(backdropDiv.scrollTop).toBe(0);
+        expect(backdropDiv.scrollLeft).toBe(0);
+
+        // Force nonzero scroll position directly on the textarea (jsdom does
+        // not derive these from layout/overflow).
+        textarea.scrollTop = 42;
+        textarea.scrollLeft = 17;
+        fireEvent.scroll(textarea);
+
+        expect(lineNumbersDiv.scrollTop).toBe(42);
+        expect(backdropDiv.scrollTop).toBe(42);
+        expect(backdropDiv.scrollLeft).toBe(17);
     });
 
     // --- SVG icon components (lines 8, 14) ---
