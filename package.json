@@ -84,7 +84,7 @@
     "stylelint-order": "^8.0.0",
     "sync-pom-version-to-package": "^1.6.1",
     "webpack": "^5.91.0",
-    "webpack-bundle-analyzer": "^4.10.2",
+    "webpack-bundle-analyzer": "^5.3.2",
     "webpack-cli": "^5.1.4"
   }
 }
