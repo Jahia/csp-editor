@@ -75,9 +75,17 @@
     "axios": "^1.18.0",
     "fast-uri": "^3.1.5",
     "ip-address": "^10.3.1",
-    "minimatch@npm:^10.2.2": "^11.0.1",
-    "qs@npm:~6.14.1": "^6.16.1",
+    "qs": "^6.16.1",
     "serialize-javascript": "^7.1.3",
-    "systeminformation": "^5.31.7"
+    "systeminformation": "^5.31.7",
+    "test-exclude": "^8.0.0",
+    "test-exclude/glob": "^14.0.3",
+    "**/test-exclude/glob": "^14.0.3",
+    "test-exclude/minimatch": "^11.0.1",
+    "**/test-exclude/minimatch": "^11.0.1",
+    "nyc/glob": "^14.0.3",
+    "**/nyc/glob": "^14.0.3",
+    "cacache/glob": "^14.0.3",
+    "**/cacache/glob": "^14.0.3"
   }
 }
