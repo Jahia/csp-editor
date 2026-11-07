@@ -14,6 +14,8 @@ updates:
       # frontend-maven-plugin 2.x requires a Java 17 Maven runtime
       - dependency-name: "com.github.eirslett:frontend-maven-plugin"
         update-types: ["version-update:semver-major"]
+      # OSGi spec artifacts set Require-Capability/Import-Package floors; Jahia 8.2 ships Felix SCR 2.1.30 (DS 1.4)
+      - dependency-name: "org.osgi:*"
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -46,6 +48,17 @@ updates:
       - dependency-name: "react-redux"
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Babel 8 needs Node >=22.18 and drops @babel/plugin-syntax-dynamic-import used by the webpack build
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
+      # eslint 10 is flat-config only; @jahia/eslint-config depends on eslint ^8
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # stylelint 18 was skipped (2026-11); stylelint-config-standard-scss majors follow the stylelint major
+      - dependency-name: "stylelint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "stylelint-config-standard-scss"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"

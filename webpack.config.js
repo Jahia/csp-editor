@@ -71,7 +71,11 @@ module.exports = (env, argv) => {
                             loader: 'css-loader',
                             options: {
                                 modules: {
-                                    mode: 'local'
+                                    mode: 'local',
+                                    // css-loader 7 defaults to named exports; keep the
+                                    // default-export class map used by `import styles from '*.scss'`.
+                                    namedExport: false,
+                                    exportLocalsConvention: 'as-is'
                                 }
                             }
                         },

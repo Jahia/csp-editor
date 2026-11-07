@@ -17,7 +17,6 @@
 jest.mock('@jahia/moonstone', () => {
     const React = require('react');
     return {
-        // eslint-disable-next-line react/prop-types -- test mock, props come from the component under test
         Button: React.forwardRef(({label, onClick}, ref) => (
             <button ref={ref} type="button" onClick={onClick}>{label}</button>
         ))
