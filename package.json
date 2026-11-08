@@ -61,8 +61,8 @@
     "**/cacache/glob/minimatch": "^11.0.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/eslint-parser": "^7.21.8",
+    "@babel/core": "^7.29.13",
+    "@babel/eslint-parser": "^7.29.13",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/preset-env": "^7.24.4",
     "@babel/preset-react": "^7.24.1",
