@@ -9,7 +9,7 @@
     <groupId>org.jahia.community</groupId>
     <artifactId>csp-editor</artifactId>
     <name>CSP editor</name>
-    <version>1.0.2</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (CSP editor) for running on a Jahia server.</description>
 
